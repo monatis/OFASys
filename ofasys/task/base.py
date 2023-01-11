@@ -64,7 +64,8 @@ class DatasetConfig(BaseDataclass):
         default="",
         metadata={"help": "selected cols"},
     )
-    use_hf_datasets: bool = field(default=False, metadata={"help": "whether to use huggingface datasets"})
+    use_hf_datasets: bool = field(default=False, metadata={
+                                  "help": "whether to use huggingface datasets"})
     sample_ratios: Any = field(
         default=1,
         metadata={"help": "the sample ratio between each dataset."},
@@ -81,9 +82,12 @@ class DatasetConfig(BaseDataclass):
         default=None,
         metadata={"help": "number of examples in a valid batch"},
     )
-    fixed_validation_seed: Optional[int] = field(default=7, metadata={"help": "specified random seed for validation"})
-    num_workers: int = field(default=2, metadata={"help": "how many subprocesses to use for data loading"})
-    prefetch_factor: int = field(default=5, metadata={"help": "Number of batches to preload"})
+    fixed_validation_seed: Optional[int] = field(
+        default=7, metadata={"help": "specified random seed for validation"})
+    num_workers: int = field(default=2, metadata={
+                             "help": "how many subprocesses to use for data loading"})
+    prefetch_factor: int = field(
+        default=5, metadata={"help": "Number of batches to preload"})
     common_io_capacity: int = field(
         default=1024,
         metadata={"help": "common-io capacity"},
@@ -96,8 +100,10 @@ class DatasetConfig(BaseDataclass):
         default='\t',
         metadata={"help": "tsv seperator"},
     )
-    oss_buffer_capacity: int = field(default=64, metadata={"help": "oss reader initial buffer capacity, unit: Kb"})
-    header: bool = field(default=False, metadata={"help": "whether tsv file has headers of column name"})
+    oss_buffer_capacity: int = field(
+        default=64, metadata={"help": "oss reader initial buffer capacity, unit: Kb"})
+    header: bool = field(default=False, metadata={
+                         "help": "whether tsv file has headers of column name"})
     cached: bool = field(
         default=False,
         metadata={"help": "whether uses cached reader"},
@@ -115,13 +121,15 @@ class DatasetConfig(BaseDataclass):
     )
     interleaved_multiple_reader: bool = field(
         default=False,
-        metadata={"help": "Use interleaved arrangement instead of concatenation when mixing multiple readers"},
+        metadata={
+            "help": "Use interleaved arrangement instead of concatenation when mixing multiple readers"},
     )
 
 
 @dataclass
 class InstructionConfig(BaseDataclass):
-    template: Optional[str] = field(default=None, metadata={"help": "template"})
+    template: Optional[str] = field(
+        default=None, metadata={"help": "template"})
     mode: ChoiceEnum(['auto', 'manual']) = field(
         default='auto', metadata={"help": "instruction mode, not finished implementation"}
     )
@@ -130,10 +138,12 @@ class InstructionConfig(BaseDataclass):
     )
 
 
-MetricConfigs = ConfigStore().make_dataclass("ofasys.metric", "MetricConfigs", __name__)
+MetricConfigs = ConfigStore().make_dataclass(
+    "ofasys.metric", "MetricConfigs", __name__)
 
 
-CriterionConfigs = ConfigStore().make_dataclass("ofasys.criterion", "CriterionConfigs", __name__)
+CriterionConfigs = ConfigStore().make_dataclass(
+    "ofasys.criterion", "CriterionConfigs", __name__)
 
 
 @dataclass
@@ -149,8 +159,10 @@ class EvaluationConfig(BaseDataclass):
             '\'{"beam": 4, "lenpen": 0.6}\', as JSON string'
         },
     )
-    eval_print_samples: bool = field(default=False, metadata={"help": "print sample generations during validation"})
-    output_dir: str = field(default='', metadata={"help": "path to save inference results"})
+    eval_print_samples: bool = field(default=False, metadata={
+                                     "help": "print sample generations during validation"})
+    output_dir: str = field(default='', metadata={
+                            "help": "path to save inference results"})
 
 
 @dataclass
@@ -161,16 +173,24 @@ class TaskConfig(BaseDataclass):
     criterion: CriterionConfigs = field(default_factory=CriterionConfigs)
     evaluation: EvaluationConfig = field(default_factory=EvaluationConfig)
 
-    max_source_positions: int = field(default=1024, metadata={"help": "max number of tokens in the source sequence"})
-    max_target_positions: int = field(default=1024, metadata={"help": "max number of tokens in the target sequence"})
-    max_src_length: int = field(default=128, metadata={"help": "the maximum src sequence length"})
-    max_tgt_length: int = field(default=30, metadata={"help": "the maximum target sequence length"})
-    max_object_length: int = field(default=30, metadata={"help": "the maximum object sequence length"})
-    constraint_range: Optional[str] = field(default=None, metadata={"help": "constraint range"})
-    scst: bool = field(default=False, metadata={"help": "Self-critical sequence training"})
+    max_source_positions: int = field(
+        default=1024, metadata={"help": "max number of tokens in the source sequence"})
+    max_target_positions: int = field(
+        default=1024, metadata={"help": "max number of tokens in the target sequence"})
+    max_src_length: int = field(default=128, metadata={
+                                "help": "the maximum src sequence length"})
+    max_tgt_length: int = field(
+        default=30, metadata={"help": "the maximum target sequence length"})
+    max_object_length: int = field(
+        default=30, metadata={"help": "the maximum object sequence length"})
+    constraint_range: Optional[str] = field(
+        default=None, metadata={"help": "constraint range"})
+    scst: bool = field(default=False, metadata={
+                       "help": "Self-critical sequence training"})
     scst_args: str = field(
         default='{}',
-        metadata={"help": 'generation args for Self-critical sequence training, as JSON string'},
+        metadata={
+            "help": 'generation args for Self-critical sequence training, as JSON string'},
     )
 
     diffuser_args: str = field(
@@ -204,22 +224,27 @@ class OFATask:
         self.cfg = TaskConfig() if cfg is None else cfg
         self.cfg.update(**kwargs)
         self._generator = None
-        self.diffuser_args = json.loads(cfg.diffuser_args)  # accessed by the diffusion criterion and generator
+        # accessed by the diffusion criterion and generator
+        self.diffuser_args = json.loads(self.cfg.diffuser_args)
 
         self.datasets = {}
         self.data_iterators: Dict[str, EpochBatchIterator] = {}
         self.templates = parse_template(self.cfg.instruction.template)
         warning_for_bos_eos(self.templates)
-        self.target_modality = self.infer_target_modality(self.templates[0]) if self.templates is not None else None
+        self.target_modality = self.infer_target_modality(
+            self.templates[0]) if self.templates is not None else None
         self.target_preprocess = (
-            self.infer_target_preprocess(self.templates[0]) if self.templates is not None else None
+            self.infer_target_preprocess(
+                self.templates[0]) if self.templates is not None else None
         )
 
     def initialize(self, global_dict, **kwargs):
         self.global_dict = global_dict
         if kwargs.get('is_train', True):
-            update_preprocess_config_by_template(self.cfg.preprocess, self.templates, self.name)
-        self.general_preprocess = self.build_preprocess(self.cfg.preprocess, global_dict)
+            update_preprocess_config_by_template(
+                self.cfg.preprocess, self.templates, self.name)
+        self.general_preprocess = self.build_preprocess(
+            self.cfg.preprocess, global_dict)
         self.metrics = self.build_metrics(self.cfg.evaluation.metrics)
         if kwargs.get('is_train', True):
             self.criterion = self.build_criterion(self.cfg.criterion)
@@ -238,7 +263,8 @@ class OFATask:
                 assert self.target_preprocess is not None
                 gen_args["constraint_trie"] = self.general_preprocess.name2pre[self.target_preprocess].constraint_trie
                 gen_args["constraint_range"] = self.cfg.constraint_range
-            self._generator = self.build_generator(target_modality=self.target_modality, **gen_args)
+            self._generator = self.build_generator(
+                target_modality=self.target_modality, **gen_args)
         return self._generator
 
     @generator.setter
@@ -249,7 +275,8 @@ class OFATask:
     def scst_generator(self):
         if self._scst_generator is None:
             scst_args = json.loads(self.cfg.scst_args)
-            self._scst_generator = self.build_generator(target_modality=self.target_modality, **scst_args)
+            self._scst_generator = self.build_generator(
+                target_modality=self.target_modality, **scst_args)
         return self._scst_generator
 
     @property
@@ -260,7 +287,8 @@ class OFATask:
             return self.__class__.__name__
 
     def add_dataset(self, dataset, split="train"):
-        assert self.datasets.get(split, None) is None, f"{split} dataset already exists in task {self.name}"
+        assert self.datasets.get(
+            split, None) is None, f"{split} dataset already exists in task {self.name}"
         self.datasets[split] = dataset
 
     def add_train_dataset(self, dataset):
@@ -322,7 +350,8 @@ class OFATask:
             return template
 
         template = get_template()
-        ist = Instruction(template, split=split, decoder_plain_with_loss=self.cfg.instruction.decoder_plain_with_loss)
+        ist = Instruction(
+            template, split=split, decoder_plain_with_loss=self.cfg.instruction.decoder_plain_with_loss)
         return ist.format(**data)
 
     def build_preprocess(self, cfg: PreprocessConfig, global_dict):
@@ -357,13 +386,17 @@ class OFATask:
                 continue
             config = getattr(cfg, config_field.name)
             if config.is_active:
-                criterion = ConfigStore().get("ofasys.criterion", config_field.name).target(self, config)
+                criterion = ConfigStore().get(
+                    "ofasys.criterion", config_field.name).target(self, config)
                 break
         if criterion is None:
             config = getattr(cfg, "cross_entropy")
-            criterion = ConfigStore().get("ofasys.criterion", "cross_entropy").target(self, config)
-            logger.info(f"No criterion is specified for {self.name}, CrossEntropyCriterion will be used by default.")
-        assert not utils.has_parameters(criterion), "NOT support criterion with parameters yet."
+            criterion = ConfigStore().get(
+                "ofasys.criterion", "cross_entropy").target(self, config)
+            logger.info(
+                f"No criterion is specified for {self.name}, CrossEntropyCriterion will be used by default.")
+        assert not utils.has_parameters(
+            criterion), "NOT support criterion with parameters yet."
         return criterion
 
     def build_metrics(self, cfg: MetricConfigs) -> List[BaseMetric]:
@@ -383,7 +416,8 @@ class OFATask:
             metric_config = getattr(cfg, config_field.name)
             if metric_config.target_field is None:
                 continue
-            metrics.append(ConfigStore().get("ofasys.metric", config_field.name).target(metric_config))
+            metrics.append(ConfigStore().get("ofasys.metric",
+                           config_field.name).target(metric_config))
         return metrics
 
     def preprocess_data_and_instruction(self, data, split):
@@ -422,7 +456,8 @@ class OFATask:
             data_paths=data_paths,
             dataset=self.datasets.get(split, None),
             split=split,
-            process_fn=functools.partial(self.preprocess_data_and_instruction, split=split),
+            process_fn=functools.partial(
+                self.preprocess_data_and_instruction, split=split),
             collate_fn=self.general_preprocess.collate,
             update_freq=update_freq,
             batch_size=micro_batch_size,
@@ -438,7 +473,8 @@ class OFATask:
     def init_data_iterator(self, split, group=None, itr_state=None):
         assert split not in self.data_iterators
         epoch = itr_state['epoch'] if itr_state is not None else 1
-        self.data_iterators[split] = self.get_batch_iterator(split, group=group, epoch=epoch)
+        self.data_iterators[split] = self.get_batch_iterator(
+            split, group=group, epoch=epoch)
         if itr_state is not None:
             self.data_iterators[split].load_state_dict(itr_state)
         if split == 'train':
@@ -507,12 +543,14 @@ class OFATask:
             )
             > 1
         ):
-            raise ValueError("Provided Search parameters are mutually exclusive.")
+            raise ValueError(
+                "Provided Search parameters are mutually exclusive.")
         assert sampling_topk < 0 or sampling, "--sampling-topk requires --sampling"
         assert sampling_topp < 0 or sampling, "--sampling-topp requires --sampling"
 
         if sampling:
-            search_strategy = search.Sampling(self.target_dictionary, sampling_topk, sampling_topp)
+            search_strategy = search.Sampling(
+                self.target_dictionary, sampling_topk, sampling_topp)
         elif diverse_beam_groups > 0:
             search_strategy = search.DiverseBeamSearch(
                 self.target_dictionary, diverse_beam_groups, diverse_beam_strength
@@ -529,9 +567,11 @@ class OFATask:
                 max_len_b=0,
             )
         elif diversity_rate > -1:
-            search_strategy = search.DiverseSiblingsSearch(self.target_dictionary, diversity_rate)
+            search_strategy = search.DiverseSiblingsSearch(
+                self.target_dictionary, diversity_rate)
         elif constrained:
-            search_strategy = search.LexicallyConstrainedBeamSearch(self.target_dictionary, constraints)
+            search_strategy = search.LexicallyConstrainedBeamSearch(
+                self.target_dictionary, constraints)
         else:
             search_strategy = search.BeamSearch(self.target_dictionary)
 
@@ -607,7 +647,8 @@ class OFATask:
         with torch.autograd.profiler.record_function("forward"):
             with torch.cuda.amp.autocast(enabled=(isinstance(optimizer, AMPOptimizer))):
                 sample = model.update_sample(sample)
-                loss, sample_size, logging_output = self.criterion(model, sample, update_num=update_num)
+                loss, sample_size, logging_output = self.criterion(
+                    model, sample, update_num=update_num)
         if ignore_grad:
             loss *= 0
         with torch.autograd.profiler.record_function("backward"):
@@ -646,7 +687,8 @@ class OFATask:
                     predict_results.append(outputs[0].image)
             elif self.target_modality == ModalityType.AUDIO:
                 for out in outputs:
-                    predict_results.append(out.waveform.detach().cpu().numpy().astype(np.float32))
+                    predict_results.append(
+                        out.waveform.detach().cpu().numpy().astype(np.float32))
             elif self.target_modality == ModalityType.MOTION:
                 for out in outputs:
                     predict_results.append(out.bvh)
@@ -707,16 +749,19 @@ class OFATask:
 
     def reduce_metrics(self, logging_outputs, criterion):
         if not any("ntokens" in log for log in logging_outputs):
-            warnings.warn("ntokens not found in Criterion logging outputs, cannot log wpb or wps")
+            warnings.warn(
+                "ntokens not found in Criterion logging outputs, cannot log wpb or wps")
         else:
             ntokens = sum(log.get("ntokens", 0) for log in logging_outputs)
             metrics.log_scalar("wpb", ntokens, priority=180, round=1)
             metrics.log_speed("wps", ntokens, priority=90, round=1)
 
         if not any("nsentences" in log for log in logging_outputs):
-            warnings.warn("nsentences not found in Criterion logging outputs, cannot log bsz")
+            warnings.warn(
+                "nsentences not found in Criterion logging outputs, cannot log bsz")
         else:
-            nsentences = sum(log.get("nsentences", 0) for log in logging_outputs)
+            nsentences = sum(log.get("nsentences", 0)
+                             for log in logging_outputs)
             metrics.log_scalar("bsz", nsentences, priority=190, round=1)
 
         criterion.reduce_metrics(logging_outputs, self.name)
@@ -739,9 +784,11 @@ class OFATask:
         model.eval()
         target_slot = Slot.get_target_slot_from_sample(sample)
 
-        gen_outputs = self.inference_step(generator=self.generator, model=model, sample=sample, **kwargs)
+        gen_outputs = self.inference_step(
+            generator=self.generator, model=model, sample=sample, **kwargs)
 
-        outputs = self.postprocess(gen_outputs, target_slot=target_slot, **sample)
+        outputs = self.postprocess(
+            gen_outputs, target_slot=target_slot, **sample)
         return outputs
 
     def postprocess_for_image_code(self, outputs: BatchGeneratorOutput, **sample):
@@ -752,7 +799,8 @@ class OFATask:
             if isinstance(single_output, List):
                 single_output: MultiGeneratorOutput
                 image_codes = (
-                    torch.cat([sub_output.tokens.unsqueeze(0) for sub_output in single_output])
+                    torch.cat([sub_output.tokens.unsqueeze(0)
+                              for sub_output in single_output])
                     - preprocessor.code_index_start
                 )
                 images = adaptor.tokenizer.decode(image_codes, return_pil=True)
@@ -768,7 +816,8 @@ class OFATask:
                     outputs[idx] = new_outputs
             else:
                 single_output: SequenceGeneratorOutput
-                image_codes = single_output.tokens.unsqueeze(0) - preprocessor.code_index_start
+                image_codes = single_output.tokens.unsqueeze(
+                    0) - preprocessor.code_index_start
                 images = adaptor.tokenizer.decode(image_codes, return_pil=True)
                 single_output.image = images[0]
         return outputs
@@ -854,11 +903,13 @@ def collect_adaptor_name_from_tasks(tasks: list) -> Set[str]:
             for slot in ist.slots:
                 if slot.is_src:
                     encoder_adaptors.add(
-                        slot.get_attr('adaptor') if slot.has_attr('adaptor') else default_adaptor[slot.modality]
+                        slot.get_attr('adaptor') if slot.has_attr(
+                            'adaptor') else default_adaptor[slot.modality]
                     )
                 else:
                     decoder_adaptors.add(
-                        slot.get_attr('adaptor') if slot.has_attr('adaptor') else default_adaptor[slot.modality]
+                        slot.get_attr('adaptor') if slot.has_attr(
+                            'adaptor') else default_adaptor[slot.modality]
                     )
     logger.info(f"Encoder adaptor {'，'.join(encoder_adaptors)} be activated!")
     logger.info(f"Decoder adaptor {'，'.join(decoder_adaptors)} be activated!")
@@ -872,14 +923,16 @@ def update_preprocess_config_by_template(cfg: PreprocessConfig, templates: List[
         ist = Instruction(template)
         for slot in ist.slots:
             all_preprocess_name.add(
-                slot.get_attr('preprocess') if slot.has_attr('preprocess') else default_preprocess[slot.modality]
+                slot.get_attr('preprocess') if slot.has_attr(
+                    'preprocess') else default_preprocess[slot.modality]
             )
     for pre_name in cfg.__annotations__:
         if pre_name in all_preprocess_name:
             setattr(getattr(cfg, pre_name), 'is_active', True)
         else:
             setattr(getattr(cfg, pre_name), 'is_active', False)
-    logger.info(f"Preprocess {'，'.join(all_preprocess_name)} of Task:{task_name} be activated!")
+    logger.info(
+        f"Preprocess {'，'.join(all_preprocess_name)} of Task:{task_name} be activated!")
 
 
 def warning_for_bos_eos(templates: List[str]):
@@ -902,4 +955,5 @@ def warning_for_bos_eos(templates: List[str]):
     if att_warnings:
         logger.warning(f"Attributs {', '.join(att_warnings)} will be ignored!")
     if token_warnings:
-        logger.warning(f"Tokens {', '.join(token_warnings)} will be treated as plain text!")
+        logger.warning(
+            f"Tokens {', '.join(token_warnings)} will be treated as plain text!")
